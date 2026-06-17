@@ -22,7 +22,9 @@ link .tmux.conf
 if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
     echo "Installing TPM..."
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
-    echo "TPM installed. Open tmux and press Ctrl+a + I to install plugins."
 fi
 
-echo "Done. Start tmux and press Ctrl+a + I to install plugins."
+echo "Installing tmux plugins..."
+~/.tmux/plugins/tpm/bin/install_plugins
+
+echo "Done. Start tmux."
