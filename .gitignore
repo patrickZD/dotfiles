@@ -10,3 +10,25 @@
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Claude Code — sensitive / ephemeral files
+.claude/.credentials.json
+.claude/backups/
+.claude/cache/
+.claude/file-history/
+.claude/history.jsonl
+.claude/.last-cleanup
+.claude/.last-update-result.json
+.claude/paste-cache/
+.claude/plugins/cache/
+.claude/plugins/data/
+.claude/plugins/.last_inuse_sweep
+.claude/remote-settings.json
+.claude/policy-limits.json
+.claude/session-env/
+.claude/sessions/
+.claude/shell-snapshots/
+.claude/telemetry/
+
+# gstack is cloned by install.sh
+.claude/skills/gstack/

@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "plugins": {
+    "claude-hud@claude-hud": [
+      {
+        "scope": "user",
+        "installPath": "/home/patrick/.claude/plugins/cache/claude-hud/claude-hud/0.1.0",
+        "version": "0.1.0",
+        "installedAt": "2026-06-07T03:16:42.056Z",
+        "lastUpdated": "2026-06-07T03:16:42.056Z",
+        "gitCommitSha": "5d29a1f7a3cf505571413bea6285ae1b68b9876e"
+      }
+    ],
+    "superpowers@superpowers-dev": [
+      {
+        "scope": "user",
+        "installPath": "/home/patrick/.claude/plugins/cache/superpowers-dev/superpowers/5.1.0",
+        "version": "5.1.0",
+        "installedAt": "2026-06-08T11:07:39.275Z",
+        "lastUpdated": "2026-06-08T11:07:39.275Z",
+        "gitCommitSha": "6fd4507659784c351abbd2bc264c7162cfd386dc"
+      }
+    ]
+  }
+}

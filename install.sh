@@ -3,28 +3,101 @@
 set -e
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 link() {
     local src="$DOTFILES_DIR/$1"
     local dst="$HOME/$1"
-    if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-        echo "Backing up existing $dst -> ${dst}.bak"
+    mkdir -p "$(dirname "$dst")"
+    # Remove existing symlink or back up real file/dir
+    if [ -L "$dst" ]; then
+        rm "$dst"
+    elif [ -e "$dst" ]; then
+        echo "  backing up $dst -> ${dst}.bak"
         mv "$dst" "${dst}.bak"
     fi
     ln -sf "$src" "$dst"
-    echo "Linked $dst"
+    echo "  linked $dst"
 }
 
+# ---------------------------------------------------------------------------
 # tmux
+# ---------------------------------------------------------------------------
+
+echo "==> tmux"
 link .tmux.conf
 
-# Install TPM if not present
 if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
-    echo "Installing TPM..."
-    git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+    echo "  installing TPM..."
+    git clone --quiet https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+fi
+~/.tmux/plugins/tpm/bin/install_plugins >/dev/null 2>&1
+echo "  tmux plugins installed"
+
+# ---------------------------------------------------------------------------
+# Claude Code
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "==> Claude Code"
+mkdir -p "$CLAUDE_DIR/skills" "$CLAUDE_DIR/plugins"
+
+# CLAUDE.md
+link .claude/CLAUDE.md
+
+# settings.json — substitute the node binary path at install time
+NODE_PATH="$(command -v node 2>/dev/null || true)"
+if [ -z "$NODE_PATH" ] && [ -s "$HOME/.nvm/nvm.sh" ]; then
+    # shellcheck disable=SC1091
+    source "$HOME/.nvm/nvm.sh" --no-use
+    NODE_PATH="$(nvm which current 2>/dev/null || true)"
+fi
+NODE_PATH="${NODE_PATH:-node}"
+
+sed "s|NODE_PATH_PLACEHOLDER|$NODE_PATH|g" \
+    "$DOTFILES_DIR/.claude/settings.json" > "$CLAUDE_DIR/settings.json"
+echo "  written $CLAUDE_DIR/settings.json (node: $NODE_PATH)"
+
+# Plugin registry — tell Claude which marketplaces and plugins to use
+cp "$DOTFILES_DIR/.claude/plugins/installed_plugins.json" "$CLAUDE_DIR/plugins/installed_plugins.json"
+cp "$DOTFILES_DIR/.claude/plugins/known_marketplaces.json" "$CLAUDE_DIR/plugins/known_marketplaces.json"
+echo "  plugin registry copied"
+
+# lark skills
+for skill_src in "$DOTFILES_DIR/.claude/skills"/lark-*; do
+    skill_name="$(basename "$skill_src")"
+    link ".claude/skills/$skill_name"
+done
+echo "  lark skills linked"
+
+# gstack — standalone git repo, not a submodule
+GSTACK_DIR="$CLAUDE_DIR/skills/gstack"
+if [ ! -d "$GSTACK_DIR/.git" ]; then
+    echo "  cloning gstack..."
+    git clone --quiet https://github.com/garrytan/gstack.git "$GSTACK_DIR"
+else
+    echo "  gstack already present, pulling..."
+    git -C "$GSTACK_DIR" pull --ff-only --quiet
 fi
 
-echo "Installing tmux plugins..."
-~/.tmux/plugins/tpm/bin/install_plugins
+# ---------------------------------------------------------------------------
+# Claude plugins (superpowers + claude-hud)
+# Claude's plugin system doesn't expose a CLI installer; the installed_plugins.json
+# above tells Claude which plugins to load, but the cache must be populated first.
+# On first `claude` launch after install, run these two commands inside Claude:
+#   /plugins install claude-hud
+#   /plugins install superpowers
+# Then run /claude-hud:configure to rebuild the statusLine for this machine.
+# ---------------------------------------------------------------------------
 
-echo "Done. Start tmux."
+echo ""
+echo "Done."
+echo ""
+echo "Next steps inside Claude Code:"
+echo "  1. Run: /plugins install claude-hud"
+echo "  2. Run: /plugins install superpowers"
+echo "  3. Run: /claude-hud:configure"
