@@ -39,6 +39,35 @@ fi
 echo "  tmux plugins installed"
 
 # ---------------------------------------------------------------------------
+# kitty
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "==> kitty"
+
+if ! command -v kitty &>/dev/null; then
+    echo "  installing kitty..."
+    curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin launch=n
+    # Add kitty to PATH
+    mkdir -p "$HOME/.local/bin"
+    ln -sf "$HOME/.local/kitty.app/bin/kitty" "$HOME/.local/bin/kitty"
+    echo "  kitty installed"
+else
+    echo "  kitty already installed: $(kitty --version)"
+fi
+
+# Powerline font (required by kitty.conf for tmux status bar separators)
+if ! fc-list | grep -qi "powerline"; then
+    echo "  installing Powerline fonts..."
+    sudo apt-get install -y fonts-powerline >/dev/null
+    echo "  Powerline fonts installed"
+else
+    echo "  Powerline fonts already present"
+fi
+
+link .config/kitty/kitty.conf
+
+# ---------------------------------------------------------------------------
 # Claude Code
 # ---------------------------------------------------------------------------
 
