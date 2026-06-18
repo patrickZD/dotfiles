@@ -67,6 +67,22 @@ fi
 
 link .config/kitty/kitty.conf
 
+# Set kitty as the default terminal
+KITTY_BIN="$HOME/.local/kitty.app/bin/kitty"
+if [ ! -f "$KITTY_BIN" ]; then
+    KITTY_BIN="$(command -v kitty)"
+fi
+if sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator "$KITTY_BIN" 50 2>/dev/null; then
+    sudo update-alternatives --set x-terminal-emulator "$KITTY_BIN"
+    echo "  kitty set as default terminal (update-alternatives)"
+fi
+# GNOME fallback
+if command -v gsettings &>/dev/null; then
+    gsettings set org.gnome.desktop.default-applications.terminal exec "$KITTY_BIN"
+    gsettings set org.gnome.desktop.default-applications.terminal exec-arg ''
+    echo "  kitty set as default terminal (gsettings)"
+fi
+
 # ---------------------------------------------------------------------------
 # Claude Code
 # ---------------------------------------------------------------------------
