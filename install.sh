@@ -38,6 +38,24 @@ fi
 ~/.tmux/plugins/tpm/bin/install_plugins >/dev/null 2>&1
 echo "  tmux plugins installed"
 
+# Reload config in any live sessions and shift window 0 → 1 for sessions
+# created before base-index 1 was active.
+if tmux info &>/dev/null 2>&1; then
+    tmux source-file ~/.tmux.conf 2>/dev/null || true
+    tmux list-sessions -F '#{session_name}' 2>/dev/null | while read -r sess; do
+        if tmux list-windows -t "$sess" -F '#{window_index}' 2>/dev/null | grep -q '^0$'; then
+            last=$(tmux list-windows -t "$sess" -F '#{window_index}' 2>/dev/null | sort -n | tail -1)
+            tmp=$(( last + 10 ))
+            tmux move-window -s "${sess}:0" -t "${sess}:${tmp}"
+            for i in $(tmux list-windows -t "$sess" -F '#{window_index}' 2>/dev/null | grep -v "^${tmp}$" | sort -rn); do
+                tmux move-window -s "${sess}:${i}" -t "${sess}:$(( i + 1 ))" 2>/dev/null || true
+            done
+            tmux move-window -s "${sess}:${tmp}" -t "${sess}:1"
+        fi
+    done
+    echo "  tmux config reloaded"
+fi
+
 # ---------------------------------------------------------------------------
 # kitty
 # ---------------------------------------------------------------------------
