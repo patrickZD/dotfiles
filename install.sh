@@ -57,6 +57,31 @@ if tmux info &>/dev/null 2>&1; then
 fi
 
 # ---------------------------------------------------------------------------
+# Vim
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "==> Vim"
+link .vimrc
+
+if ! command -v vim &>/dev/null; then
+    echo "  vim not found; install vim before running PlugInstall"
+else
+    mkdir -p "$HOME/.vim/autoload"
+    if [ ! -f "$HOME/.vim/autoload/plug.vim" ]; then
+        echo "  installing vim-plug..."
+        curl -fLo "$HOME/.vim/autoload/plug.vim" --create-dirs \
+            https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+        echo "  vim-plug installed"
+    else
+        echo "  vim-plug already present"
+    fi
+
+    vim +'PlugInstall --sync' +qa
+    echo "  vim plugins installed"
+fi
+
+# ---------------------------------------------------------------------------
 # kitty
 # ---------------------------------------------------------------------------
 
