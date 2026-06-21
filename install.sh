@@ -25,11 +25,61 @@ link() {
 }
 
 # ---------------------------------------------------------------------------
+# zsh
+# ---------------------------------------------------------------------------
+
+echo "==> zsh"
+
+if ! command -v zsh &>/dev/null; then
+    echo "  zsh not found; install zsh before using .zshrc"
+fi
+
+if [ ! -d "$HOME/.oh-my-zsh" ]; then
+    echo "  installing Oh My Zsh..."
+    git clone --quiet --depth=1 https://github.com/ohmyzsh/ohmyzsh.git "$HOME/.oh-my-zsh"
+else
+    echo "  Oh My Zsh already present"
+fi
+
+ZSH_CUSTOM_DIR="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+mkdir -p "$ZSH_CUSTOM_DIR/plugins"
+
+if [ ! -d "$ZSH_CUSTOM_DIR/plugins/zsh-autosuggestions" ]; then
+    echo "  installing zsh-autosuggestions..."
+    git clone --quiet --depth=1 https://github.com/zsh-users/zsh-autosuggestions \
+        "$ZSH_CUSTOM_DIR/plugins/zsh-autosuggestions"
+else
+    echo "  zsh-autosuggestions already present"
+fi
+
+if [ ! -d "$ZSH_CUSTOM_DIR/plugins/zsh-syntax-highlighting" ]; then
+    echo "  installing zsh-syntax-highlighting..."
+    git clone --quiet --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git \
+        "$ZSH_CUSTOM_DIR/plugins/zsh-syntax-highlighting"
+else
+    echo "  zsh-syntax-highlighting already present"
+fi
+
+if command -v fzf &>/dev/null || [ -x "$HOME/.fzf/bin/fzf" ]; then
+    echo "  fzf already present"
+elif [ ! -d "$HOME/.fzf" ]; then
+    echo "  installing fzf..."
+    git clone --quiet --depth=1 https://github.com/junegunn/fzf.git "$HOME/.fzf"
+    "$HOME/.fzf/install" --key-bindings --completion --no-update-rc >/dev/null
+else
+    echo "  fzf directory exists but fzf was not found; run ~/.fzf/install if needed"
+fi
+
+link .zshrc
+
+# ---------------------------------------------------------------------------
 # tmux
 # ---------------------------------------------------------------------------
 
+echo ""
 echo "==> tmux"
 link .tmux.conf
+link .local/bin/tmux-pane-send-lines
 
 if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
     echo "  installing TPM..."

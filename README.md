@@ -1,6 +1,6 @@
 # dotfiles
 
-个人开发环境配置仓库。当前覆盖 tmux、kitty、Vim 和 Claude Code。
+个人开发环境配置仓库。当前覆盖 zsh、tmux、kitty、Vim 和 Claude Code。
 
 ## 安装
 
@@ -14,6 +14,7 @@ cd ~/dotfiles
 安装脚本会执行这些动作：
 
 - 将仓库中的配置软链接到 `$HOME`。
+- 安装或配置 Oh My Zsh、zsh plugins 和 fzf。
 - 安装 tmux TPM (Tmux Plugin Manager) 和 tmux plugins。
 - 安装或配置 kitty，并把 kitty 设置为默认终端。
 - 安装 Powerline 字体。
@@ -25,8 +26,10 @@ cd ~/dotfiles
 
 ```text
 .
+├── .zshrc
 ├── .tmux.conf
 ├── .vimrc
+├── .local/bin/tmux-pane-send-lines
 ├── .config/kitty/kitty.conf
 ├── .claude/
 │   ├── CLAUDE.md
@@ -34,6 +37,33 @@ cd ~/dotfiles
 │   └── plugins/
 └── install.sh
 ```
+
+## zsh
+
+配置文件：
+
+```text
+~/.zshrc
+```
+
+使用 Oh My Zsh，启用：
+
+```text
+git
+zsh-autosuggestions
+zsh-syntax-highlighting
+```
+
+fzf 历史预览：
+
+```text
+输入命令前缀，比如 ls，然后按 F2
+上下键选择历史命令
+Enter 填回命令行
+Esc 或 F2 关闭预览
+```
+
+F2 会显示最近 10 条以前缀匹配当前输入的历史命令。
 
 ## tmux
 
@@ -60,6 +90,8 @@ Ctrl-a H/J/K/L  调整 pane 大小
 Ctrl-a r      重新加载 tmux 配置
 Ctrl-a [      进入 copy-mode
 Ctrl-a q      显示 pane 编号
+Ctrl-a T      将某个 pane 底部 N 行发送到另一个 pane
+Ctrl-a G      将某个 pane 顶部 N 行发送到另一个 pane
 ```
 
 ### Pane 编号显示时间
@@ -89,6 +121,17 @@ Esc     取消并退出
 - 点击其他区域会清除当前高亮。
 - 普通 shell 里滚轮不会进入 copy-mode。
 - Vim、less 等 alternate screen 程序里滚轮会转发给程序。
+
+发送 pane 内容给 Codex/Claude Code：
+
+```text
+Ctrl-a T
+source pane: 2
+target pane: 4
+lines: 10
+```
+
+这会把当前 window 中 pane 2 底部 10 行直接粘贴到 pane 4。`Ctrl-a G` 是同样的交互，但发送顶部 N 行。
 
 ### 会话保存和恢复
 

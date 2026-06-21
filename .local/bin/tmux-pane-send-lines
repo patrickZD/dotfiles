@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat >&2 <<'EOF'
+Usage: tmux-pane-send-lines <tail|head> <window-id> <source-pane-index> <target-pane-index> <line-count>
+EOF
+}
+
+fail() {
+    local message="$1"
+    tmux display-message "pane-send-lines: $message" 2>/dev/null || true
+    printf 'tmux-pane-send-lines: %s\n' "$message" >&2
+    exit 1
+}
+
+target_for_pane_index() {
+    local window_id="$1"
+    local pane_index="$2"
+
+    tmux display-message -p -t "${window_id}.${pane_index}" '#{pane_id}' 2>/dev/null ||
+        return 1
+}
+
+history_start_line() {
+    local history_size="$1"
+
+    if (( history_size > 0 )); then
+        printf -- '-%d\n' "$history_size"
+    else
+        printf '0\n'
+    fi
+}
+
+line_from_ordinal() {
+    local ordinal="$1"
+
+    if (( ordinal < history_size )); then
+        printf -- '-%d\n' "$(( history_size - ordinal ))"
+    else
+        printf '%d\n' "$(( ordinal - history_size ))"
+    fi
+}
+
+if (( $# != 5 )); then
+    usage
+    exit 2
+fi
+
+mode="$1"
+window_id="$2"
+src_index="$3"
+dst_index="$4"
+line_count="$5"
+
+case "$mode" in
+    tail | head) ;;
+    *) fail "mode must be tail or head" ;;
+esac
+
+[[ "$src_index" =~ ^[0-9]+$ ]] || fail "source pane must be a number"
+[[ "$dst_index" =~ ^[0-9]+$ ]] || fail "target pane must be a number"
+[[ "$line_count" =~ ^[0-9]+$ ]] || fail "line count must be a positive number"
+(( line_count > 0 )) || fail "line count must be greater than zero"
+
+src_pane="$(target_for_pane_index "$window_id" "$src_index")" ||
+    fail "source pane ${window_id}.${src_index} was not found"
+dst_pane="$(target_for_pane_index "$window_id" "$dst_index")" ||
+    fail "target pane ${window_id}.${dst_index} was not found"
+
+pane_height="$(tmux display-message -p -t "$src_pane" '#{pane_height}')"
+history_size="$(tmux display-message -p -t "$src_pane" '#{history_size}')"
+[[ "$pane_height" =~ ^[0-9]+$ ]] || fail "could not read source pane height"
+[[ "$history_size" =~ ^[0-9]+$ ]] || fail "could not read source pane history size"
+
+last_visible_line=-1
+for (( row = pane_height - 1; row >= 0; row-- )); do
+    if [[ -n "$(tmux capture-pane -p -t "$src_pane" -S "$row" -E "$row")" ]]; then
+        last_visible_line="$row"
+        break
+    fi
+done
+
+if (( last_visible_line >= 0 )); then
+    last_ordinal=$(( history_size + last_visible_line ))
+else
+    last_ordinal=$(( history_size - 1 ))
+fi
+
+total_lines=$(( last_ordinal + 1 ))
+(( total_lines > 0 )) || fail "source pane has no content"
+
+if (( line_count > total_lines )); then
+    line_count="$total_lines"
+fi
+
+case "$mode" in
+    tail)
+        start_ordinal=$(( last_ordinal - line_count + 1 ))
+        (( start_ordinal >= 0 )) || start_ordinal=0
+        start_line="$(line_from_ordinal "$start_ordinal")"
+        end_line="$(line_from_ordinal "$last_ordinal")"
+        ;;
+    head)
+        start_line="$(history_start_line "$history_size")"
+        end_line="$(line_from_ordinal "$(( line_count - 1 ))")"
+        ;;
+esac
+
+buffer_name="pane-send-lines-${$}-${RANDOM}"
+
+if ! tmux capture-pane -pJ -t "$src_pane" -S "$start_line" -E "$end_line" |
+    tmux load-buffer -b "$buffer_name" -; then
+    tmux delete-buffer -b "$buffer_name" 2>/dev/null || true
+    fail "failed to capture pane ${src_index}"
+fi
+
+if ! tmux paste-buffer -prd -b "$buffer_name" -t "$dst_pane"; then
+    tmux delete-buffer -b "$buffer_name" 2>/dev/null || true
+    fail "failed to paste into pane ${dst_index}"
+fi
+
+tmux display-message "sent ${mode} ${line_count} lines from pane ${src_index} to pane ${dst_index}"
