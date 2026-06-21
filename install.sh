@@ -74,11 +74,22 @@ else
     echo "  kitty already installed: $(kitty --version)"
 fi
 
-# Powerline font (required by kitty.conf for tmux status bar separators)
+# Powerline fonts (required by kitty.conf for tmux status bar separators)
+# fonts-powerline (apt) provides PowerlineSymbols.otf (symbols only).
+# DejaVu Sans Mono for Powerline must be installed separately.
 if ! fc-list | grep -qi "powerline"; then
-    echo "  installing Powerline fonts..."
+    echo "  installing Powerline symbols font..."
     sudo apt-get install -y fonts-powerline >/dev/null
-    echo "  Powerline fonts installed"
+fi
+if ! fc-list | grep -qi "dejavu sans mono for powerline"; then
+    echo "  installing DejaVu Sans Mono for Powerline..."
+    mkdir -p "$HOME/.local/share/fonts"
+    curl -fL "https://github.com/powerline/fonts/raw/master/DejaVuSansMono/DejaVu%20Sans%20Mono%20for%20Powerline.ttf" \
+        -o "$HOME/.local/share/fonts/DejaVuSansMono-Powerline.ttf"
+    curl -fL "https://github.com/powerline/fonts/raw/master/DejaVuSansMono/DejaVu%20Sans%20Mono%20Bold%20for%20Powerline.ttf" \
+        -o "$HOME/.local/share/fonts/DejaVuSansMono-Bold-Powerline.ttf"
+    fc-cache -f "$HOME/.local/share/fonts"
+    echo "  DejaVu Powerline fonts installed"
 else
     echo "  Powerline fonts already present"
 fi
